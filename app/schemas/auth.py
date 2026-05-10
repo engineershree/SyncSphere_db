@@ -34,6 +34,9 @@ class UserResponse(UserBase):
     status: str
     is_email_verified: bool
     is_phone_verified: bool
+    refresh_token: Optional[str] = None
+    refresh_token_expires_at: Optional[datetime] = None
+    refresh_token_jti: Optional[str] = None
     department: Optional[str] = None
     job_title: Optional[str] = None
     employee_id: Optional[str] = None
@@ -51,4 +54,5 @@ class UserResponse(UserBase):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"

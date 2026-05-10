@@ -35,6 +35,9 @@ class User(BaseModel):
     
     # Authentication
     password_hash = Column(String(255), nullable=False)
+    refresh_token = Column(String(500), nullable=True)
+    refresh_token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    refresh_token_jti = Column(String(255), nullable=True)
     is_email_verified = Column(Boolean, default=False, nullable=False)
     is_phone_verified = Column(Boolean, default=False, nullable=False)
     
@@ -63,7 +66,7 @@ class User(BaseModel):
     
     # Relationships
     events_created = relationship("Event", back_populates="creator", foreign_keys="Event.creator_id")
-    leave_requests = relationship("LeaveRequest", back_populates="user")
+    leave_requests = relationship("LeaveRequest", back_populates="user", foreign_keys="LeaveRequest.user_id")
     notifications = relationship("Notification", back_populates="user")
     
     def __repr__(self):
