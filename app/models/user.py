@@ -12,6 +12,7 @@ class UserRole(str, enum.Enum):
     EVENT_MANAGER = "EVENT_MANAGER"
     HR_MANAGER = "HR_MANAGER"
     EMPLOYEE = "EMPLOYEE"
+    INTERN = "INTERN"
 
 
 class UserStatus(str, enum.Enum):
@@ -40,7 +41,7 @@ class User(BaseModel):
     
     # Role and Status
     role = Column(Enum(UserRole), default=UserRole.EMPLOYEE, nullable=False)
-    status = Column(Enum(UserStatus), default=UserStatus.PENDING, nullable=False)
+    status = Column(Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False)
     
     # Profile
     profile_picture = Column(String(500), nullable=True)
@@ -63,7 +64,7 @@ class User(BaseModel):
     
     # Relationships
     events_created = relationship("Event", back_populates="creator", foreign_keys="Event.creator_id")
-    leave_requests = relationship("LeaveRequest", back_populates="user")
+    leave_requests = relationship("LeaveRequest", back_populates="user", foreign_keys="LeaveRequest.user_id")
     notifications = relationship("Notification", back_populates="user")
     
     def __repr__(self):

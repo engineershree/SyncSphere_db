@@ -34,6 +34,18 @@ async def lifespan(app: FastAPI):
         if settings.ENVIRONMENT == "development":
             create_tables()
             logger.info("Database tables created")
+            
+            # Ensure the Postgres ENUM is updated permanently
+            try:
+                from sqlalchemy import text
+                from app.db.session import engine
+                with engine.connect() as conn:
+                    # SQLAlchemy might throw a ProgrammingError if it's not a Postgres DB, or if the type doesn't exist, so we catch it
+                    conn.execute(text("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'INTERN';"))
+                    conn.commit()
+                logger.info("Successfully ensured 'INTERN' exists in userrole ENUM")
+            except Exception as e:
+                logger.warning(f"Could not add INTERN to ENUM (this is safe to ignore on SQLite): {e}")
     else:
         logger.error("Failed to connect to database")
         raise Exception("Database connection failed")
