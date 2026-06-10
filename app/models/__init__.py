@@ -7,10 +7,11 @@ from .sms_log import SmsLog
 from .email_log import EmailLog
 from .reminder_job import ReminderJob
 from .permission import Permission
+from .blacklisted_token import BlacklistedToken
 
 __all__ = [
     "User",
-    "Event", 
+    "Event",
     "Holiday",
     "LeaveRequest",
     "Notification",
@@ -18,4 +19,5 @@ __all__ = [
     "EmailLog",
     "ReminderJob",
     "Permission",
+    "BlacklistedToken",
 ]

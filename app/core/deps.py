@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.core.security import verify_token
 from app.models.user import User
+from app.models.blacklisted_token import BlacklistedToken
 
 # HTTP Bearer token scheme
 security = HTTPBearer()
@@ -16,28 +17,41 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> User:
     """
-    Get current authenticated user.
+    Get current authenticated user. Rejects blacklisted (logged-out) tokens.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
-    user_id = verify_token(credentials.credentials)
+
+    raw_token = credentials.credentials
+
+    # Reject tokens that have been explicitly logged out
+    is_blacklisted = db.query(BlacklistedToken).filter(
+        BlacklistedToken.token == raw_token
+    ).first()
+    if is_blacklisted:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been invalidated. Please log in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id = verify_token(raw_token)
     if user_id is None:
         raise credentials_exception
-    
+
     user = db.query(User).filter(User.id == user_id, User.is_deleted == False).first()
     if user is None:
         raise credentials_exception
-    
+
     if user.status != "ACTIVE":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is not active"
         )
-    
+
     return user
 
 

@@ -6,6 +6,7 @@ from typing import Generator
 import logging
 
 from app.core.config import settings
+from app.db.base import Base  # Single shared Base — all models registered here
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +25,9 @@ else:
         echo=settings.DEBUG,
     )
 
-# Create session factory
+# Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create base class for models
-Base = declarative_base()
 
 
 def get_db() -> Generator[Session, None, None]:

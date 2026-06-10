@@ -1,12 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import Any
+from datetime import datetime
+from jose import JWTError, jwt
 
 from app.db.session import get_db
-from app.core.security import create_access_token, create_refresh_token, get_password_hash, verify_password
+from app.core.security import (
+    create_access_token, create_refresh_token,
+    get_password_hash, verify_password, verify_token
+)
+from app.core.config import settings
 from app.core.deps import get_current_user
 from app.models.user import User, UserStatus
+from app.models.blacklisted_token import BlacklistedToken
 from app.schemas.auth import Token, UserCreate, UserLogin, UserResponse, AuthResponse
 import logging
 
@@ -116,3 +123,81 @@ async def get_current_user_info(
     Get current user information.
     """
     return current_user
+
+
+@router.post("/logout")
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """
+    Logout the current user by blacklisting their access token.
+    After calling this endpoint, the token will be rejected on all protected routes.
+    """
+    raw_token = credentials.credentials
+
+    # Decode token to get expiry (for record-keeping)
+    try:
+        payload = jwt.decode(
+            raw_token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+        exp_timestamp = payload.get("exp")
+        expires_at = datetime.utcfromtimestamp(exp_timestamp) if exp_timestamp else datetime.utcnow()
+    except JWTError:
+        expires_at = datetime.utcnow()
+
+    # Check not already blacklisted (idempotent)
+    already_blacklisted = db.query(BlacklistedToken).filter(
+        BlacklistedToken.token == raw_token
+    ).first()
+
+    if not already_blacklisted:
+        blacklisted = BlacklistedToken(token=raw_token, expires_at=expires_at)
+        db.add(blacklisted)
+        db.commit()
+
+    logger.info(f"User {current_user.email} logged out successfully")
+
+    return {
+        "message": "Logged out successfully",
+        "user": current_user.email
+    }
+
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Issue a new access token using a valid refresh token.
+    """
+    raw_token = credentials.credentials
+
+    try:
+        payload = jwt.decode(
+            raw_token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Not a refresh token"
+            )
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
+
+    user = db.query(User).filter(User.id == int(user_id), User.is_deleted == False).first()
+    if not user or user.status != UserStatus.ACTIVE:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+
+    new_access_token = create_access_token(subject=user.id)
+
+    return {"access_token": new_access_token, "token_type": "bearer"}

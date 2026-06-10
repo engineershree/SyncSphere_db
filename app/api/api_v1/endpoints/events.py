@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List, Any
+from typing import List, Any, Optional
+from datetime import timedelta
 
 from app.db.session import get_db
 from app.core.deps import get_current_user
@@ -42,27 +43,28 @@ async def get_events(
     return events
 
 
-@router.post("/", response_model=EventResponse)
+@router.post("/", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 async def create_event(
     event_data: EventCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
     """
-    Create a new event.
+    Create a new event. All authenticated users can create events.
     """
-    # Check if user can manage events
-    if not current_user.can_manage_events():
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to create events"
-        )
-    
-    event = Event(
-        **event_data.dict(),
-        creator_id=current_user.id,
-        organizer_id=event_data.organizer_id or current_user.id
-    )
+    # Build event fields from request data, excluding unset optional fields
+    event_dict = event_data.dict(exclude_unset=True)
+
+    # Auto-default end_datetime to start_datetime + 1 hour (DB column is NOT NULL)
+    if "end_datetime" not in event_dict or event_dict.get("end_datetime") is None:
+        event_dict["end_datetime"] = event_dict["start_datetime"] + timedelta(hours=1)
+
+    # Set creator and organizer
+    event_dict["creator_id"] = current_user.id
+    if "organizer_id" not in event_dict or event_dict["organizer_id"] is None:
+        event_dict["organizer_id"] = current_user.id
+
+    event = Event(**event_dict)
     
     db.add(event)
     db.commit()

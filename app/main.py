@@ -10,6 +10,9 @@ from app.core.config import settings
 from app.db.session import test_connection, create_tables
 from app.api.api_v1.api import api_router
 
+# Import ALL models here so they register on Base.metadata before create_tables() runs
+import app.models  # noqa: F401 — triggers __init__.py which imports all models
+
 # Configure logging
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL),
