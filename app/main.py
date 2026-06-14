@@ -33,7 +33,32 @@ async def lifespan(app: FastAPI):
     if test_connection():
         logger.info("Database connection successful")
         
-        # Create tables (in production, use migrations instead)
+        # Run auto-migrations on startup (works on Dev and Render Production)
+        try:
+            from sqlalchemy import text
+            from app.db.session import engine
+            with engine.connect() as conn:
+                # 1. Add 'INTERN' role to database enum if Postgres
+                try:
+                    conn.execute(text("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'INTERN';"))
+                    conn.commit()
+                    logger.info("Checked/Added 'INTERN' value to userrole ENUM")
+                except Exception as enum_err:
+                    logger.debug(f"Skipping ENUM migration: {enum_err}")
+
+                # 2. Add missing columns and alter phone type in users table
+                try:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp VARCHAR(10);"))
+                    conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP WITH TIME ZONE;"))
+                    conn.execute(text("ALTER TABLE users ALTER COLUMN phone TYPE BIGINT USING phone::bigint;"))
+                    conn.commit()
+                    logger.info("Successfully checked/added 'otp' and 'otp_expires_at' columns and casted 'phone' to BIGINT")
+                except Exception as table_err:
+                    logger.warning(f"Could not perform users table auto-migrations: {table_err}")
+        except Exception as conn_err:
+            logger.warning(f"Auto-migration connection failed: {conn_err}")
+            
+        # Create tables (in development only)
         if settings.ENVIRONMENT == "development":
             create_tables()
             logger.info("Database tables created")
@@ -68,18 +93,6 @@ async def lifespan(app: FastAPI):
                     db.close()
             except Exception as e:
                 logger.warning(f"Could not bootstrap default admin user: {e}")
-            
-            # Ensure the Postgres ENUM is updated permanently
-            try:
-                from sqlalchemy import text
-                from app.db.session import engine
-                with engine.connect() as conn:
-                    # SQLAlchemy might throw a ProgrammingError if it's not a Postgres DB, or if the type doesn't exist, so we catch it
-                    conn.execute(text("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'INTERN';"))
-                    conn.commit()
-                logger.info("Successfully ensured 'INTERN' exists in userrole ENUM")
-            except Exception as e:
-                logger.warning(f"Could not add INTERN to ENUM (this is safe to ignore on SQLite): {e}")
     else:
         logger.error("Failed to connect to database")
         raise Exception("Database connection failed")
