@@ -11,19 +11,12 @@ from app.db.base import Base  # Single shared Base — all models registered her
 logger = logging.getLogger(__name__)
 
 # Create database engine
-if settings.DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(
-        settings.DATABASE_URL,
-        echo=settings.DEBUG,
-        connect_args={"check_same_thread": False},  # SQLite specific
-    )
-else:
-    engine = create_engine(
-        settings.DATABASE_URL,
-        pool_pre_ping=True,
-        pool_recycle=300,
-        echo=settings.DEBUG,
-    )
+engine = create_engine(
+    settings.DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    echo=settings.DEBUG,
+)
 
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

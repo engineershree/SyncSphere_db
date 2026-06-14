@@ -6,6 +6,7 @@ from app.models.user import UserRole, UserStatus
 
 
 class UserBase(BaseModel):
+    id: Optional[int] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone: Optional[int] = None
@@ -49,4 +50,4 @@ class UserResponse(UserBase):
     updated_at: datetime
     
     class Config:
-        from_attributes = True
+        orm_mode = True
