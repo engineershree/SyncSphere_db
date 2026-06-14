@@ -8,7 +8,7 @@ from app.models.user import UserRole, UserStatus
 class UserBase(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    phone: Optional[str] = None
+    phone: Optional[int] = None
     role: Optional[UserRole] = None
     status: Optional[UserStatus] = None
     department: Optional[str] = None

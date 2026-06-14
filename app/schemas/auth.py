@@ -9,7 +9,7 @@ class UserBase(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
-    phone: Optional[str] = None
+    phone: Optional[int] = None
     role: UserRole = UserRole.EMPLOYEE
 
 

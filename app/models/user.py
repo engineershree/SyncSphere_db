@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Enum, Boolean, DateTime, Text
+from sqlalchemy import Column, String, Enum, Boolean, DateTime, Text, BigInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -32,7 +32,7 @@ class User(BaseModel):
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    phone = Column(String(20), unique=True, index=True, nullable=True)
+    phone = Column(BigInteger, unique=True, index=True, nullable=True)
     
     # Authentication
     password_hash = Column(String(255), nullable=False)
