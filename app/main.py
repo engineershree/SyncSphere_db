@@ -33,6 +33,19 @@ async def lifespan(app: FastAPI):
     if test_connection():
         logger.info("Database connection successful")
         
+        # Database Diagnostics
+        try:
+            from sqlalchemy import text
+            from app.db.session import engine
+            with engine.connect() as conn:
+                db_name = conn.execute(text("SELECT current_database();")).scalar()
+                db_user = conn.execute(text("SELECT current_user;")).scalar()
+                db_host = conn.execute(text("SELECT inet_server_addr();")).scalar()
+                db_version = conn.execute(text("SELECT version();")).scalar()
+                logger.info(f"\n==================================================\n📊 RUNTIME DATABASE DIAGNOSTICS:\n- Name: {db_name}\n- User: {db_user}\n- Host Address: {db_host}\n- Version: {db_version}\n==================================================")
+        except Exception as diag_err:
+            logger.warning(f"Could not run database diagnostics: {diag_err}")
+        
         # Run auto-migrations on startup (works on Dev and Render Production)
         try:
             from sqlalchemy import text
