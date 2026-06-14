@@ -33,7 +33,7 @@ def create_default_admin():
             first_name="System",
             last_name="Administrator",
             email="admin@syncsphere.com",
-            phone="+1234567890",
+            phone=1234567890,
             password_hash=get_password_hash("admin123"),
             role=UserRole.ADMIN,
             status=UserStatus.ACTIVE,

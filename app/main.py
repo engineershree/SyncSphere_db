@@ -38,6 +38,37 @@ async def lifespan(app: FastAPI):
             create_tables()
             logger.info("Database tables created")
             
+            # Auto-create default admin user for development/testing convenience
+            try:
+                from app.db.session import SessionLocal
+                from app.models.user import User, UserRole, UserStatus
+                from app.core.security import get_password_hash
+                
+                db = SessionLocal()
+                try:
+                    existing_admin = db.query(User).filter(User.email == "admin@syncsphere.com").first()
+                    if not existing_admin:
+                        admin_user = User(
+                            first_name="System",
+                            last_name="Administrator",
+                            email="admin@syncsphere.com",
+                            phone=1234567890,
+                            password_hash=get_password_hash("admin123"),
+                            role=UserRole.ADMIN,
+                            status=UserStatus.ACTIVE,
+                            is_email_verified=True,
+                            is_phone_verified=True,
+                            department="IT",
+                            job_title="System Administrator"
+                        )
+                        db.add(admin_user)
+                        db.commit()
+                        logger.info("Default admin user (admin@syncsphere.com / admin123) successfully bootstrapped.")
+                finally:
+                    db.close()
+            except Exception as e:
+                logger.warning(f"Could not bootstrap default admin user: {e}")
+            
             # Ensure the Postgres ENUM is updated permanently
             try:
                 from sqlalchemy import text

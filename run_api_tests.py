@@ -134,6 +134,30 @@ def main():
     print("\n--- 9. Logout ---")
     make_request("POST", "/auth/logout", token=emp_token)
 
+    # 9.5. Test OTP Forgot Password Flow
+    print("\n--- 9.5. Testing OTP Forgot Password Flow ---")
+    forgot_resp = make_request("POST", "/auth/forgot-password", data={"email": email})
+    if not forgot_resp or "otp" not in forgot_resp:
+        print("Failed to request OTP.")
+        sys.exit(1)
+    otp = forgot_resp["otp"]
+
+    print("\n--- Testing OTP Verification ---")
+    make_request("POST", "/auth/verify-otp", data={"email": email, "otp": otp})
+
+    print("\n--- Testing Password Reset (Weak Password - Should Fail) ---")
+    # This should fail due to strict password requirements
+    make_request("POST", "/auth/reset-password", data={"email": email, "otp": otp, "new_password": "weak"})
+
+    print("\n--- Testing Password Reset (Strong Password - Should Succeed) ---")
+    # This should succeed
+    new_secure_pw = "NewSecureP@ss123"
+    make_request("POST", "/auth/reset-password", data={"email": email, "otp": otp, "new_password": new_secure_pw})
+
+    print("\n--- Testing Login with New Password ---")
+    # Verify login works with new password
+    make_request("POST", "/auth/login", data={"email": email, "password": new_secure_pw})
+
     # 10. Delete User (Admin Only)
     print("\n--- 10. Delete User (Admin Only) ---")
     make_request("DELETE", f"/users/{emp_id}", token=admin_token)

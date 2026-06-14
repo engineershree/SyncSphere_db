@@ -8,7 +8,10 @@ load_dotenv()
 def fix_enum():
     try:
         # Connect to the PostgreSQL database
-        db_url = os.getenv("DATABASE_URL", "postgresql://neondb_owner:npg_TK6syMf9nUPq@ep-dark-salad-aqa2l1wl-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require")
+        db_url = os.getenv("DATABASE_URL")
+        if not db_url:
+            print("Error: DATABASE_URL environment variable is not set in environment or .env file.")
+            return
         conn = psycopg2.connect(db_url)
         conn.autocommit = True
         cur = conn.cursor()
