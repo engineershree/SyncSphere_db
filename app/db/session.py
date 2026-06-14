@@ -50,10 +50,8 @@ def create_tables():
     Create all database tables.
     """
     try:
-        # Drop all tables first to handle schema synchronization in development
-        Base.metadata.drop_all(bind=engine)
         Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully after clean reset")
+        logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
         raise

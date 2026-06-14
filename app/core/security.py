@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
 from typing import Optional, Union, Any
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import HTTPException, status
 from app.core.config import settings
 
-# Password hashing context (lower rounds to speed up hashing significantly)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=8)
+BCRYPT_ROUNDS = 8
 
 
 def create_access_token(
@@ -77,14 +76,26 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify password against hash.
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        password_bytes = plain_password.encode('utf-8')
+        # Truncate to 72 bytes as per bcrypt spec
+        if len(password_bytes) > 72:
+            password_bytes = password_bytes[:72]
+        return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
     """
     Generate password hash.
     """
-    return pwd_context.hash(password)
+    password_bytes = password.encode('utf-8')
+    # Truncate to 72 bytes as per bcrypt spec
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+    salt = bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
+    return bcrypt.hashpw(password_bytes, salt).decode('utf-8')
 
 
 def create_password_reset_token(email: str) -> str:

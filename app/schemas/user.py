@@ -26,6 +26,10 @@ class UserCreate(UserBase):
     first_name: str
     last_name: str
 
+    @validator('email')
+    def email_to_lower(cls, v):
+        return v.lower() if v else v
+
 
 class UserUpdate(UserBase):
     pass

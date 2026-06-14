@@ -12,20 +12,37 @@ class UserBase(BaseModel):
     phone: Optional[int] = None
     role: UserRole = UserRole.EMPLOYEE
 
+    @validator('email')
+    def email_to_lower(cls, v):
+        return v.lower() if v else v
+
 
 class UserCreate(UserBase):
     password: str
     
     @validator('password')
     def validate_password(cls, v):
+        import re
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('Password must contain at least one number')
+        if not re.search(r'[@$!%*?&]', v):
+            raise ValueError('Password must contain at least one special character (e.g., @$!%*?&)')
         return v
 
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+    @validator('email')
+    def email_to_lower(cls, v):
+        return v.lower() if v else v
 
 
 class UserResponse(UserBase):
@@ -59,3 +76,45 @@ class AuthResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+    @validator('email')
+    def email_to_lower(cls, v):
+        return v.lower() if v else v
+
+
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+    @validator('email')
+    def email_to_lower(cls, v):
+        return v.lower() if v else v
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str
+
+    @validator('email')
+    def email_to_lower(cls, v):
+        return v.lower() if v else v
+
+    @validator('new_password')
+    def validate_new_password(cls, v):
+        import re
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('Password must contain at least one number')
+        if not re.search(r'[@$!%*?&]', v):
+            raise ValueError('Password must contain at least one special character (e.g., @$!%*?&)')
+        return v
