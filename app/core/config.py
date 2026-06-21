@@ -25,6 +25,9 @@ class Settings(BaseSettings):
             # SQLAlchemy 1.4+ dropped support for "postgres://"
             if v.startswith("postgres://"):
                 v = v.replace("postgres://", "postgresql://", 1)
+            # If the user copied the connection string without the postgresql:// prefix
+            elif "://" not in v and "@" in v:
+                v = f"postgresql://{v}"
         return v
     
     # JWT
