@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
     
+    @validator("DATABASE_URL", pre=True)
+    def fix_database_url(cls, v):
+        if isinstance(v, str):
+            # Strip accidental spaces and quotes from copy-pasting
+            v = v.strip().strip("'").strip('"')
+            # SQLAlchemy 1.4+ dropped support for "postgres://"
+            if v.startswith("postgres://"):
+                v = v.replace("postgres://", "postgresql://", 1)
+        return v
+    
     # JWT
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
