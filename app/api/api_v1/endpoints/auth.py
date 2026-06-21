@@ -38,9 +38,12 @@ async def register(
     logger.debug(f"Attempting to register new user with email: {user_data.email}")
     
     # Check if user already exists
-    existing_user = db.query(User).filter(
-        (User.email == user_data.email) | (User.phone == user_data.phone)
-    ).first()
+    if user_data.phone:
+        existing_user = db.query(User).filter(
+            (User.email == user_data.email) | (User.phone == user_data.phone)
+        ).first()
+    else:
+        existing_user = db.query(User).filter(User.email == user_data.email).first()
     
     if existing_user:
         logger.warning(f"Registration failed: User with email {user_data.email} or phone {user_data.phone} already exists")
@@ -111,12 +114,12 @@ async def login(
     
     logger.info(f"Successful login for user: {user.email}")
     
-    return AuthResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        user=user
-    )
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": user
+    }
 
 
 @router.get("/me", response_model=UserResponse)

@@ -48,13 +48,15 @@ def test_all():
     # 1. Register
     unique_id = str(uuid.uuid4())[:8]
     email = f"test_{unique_id}@example.com"
-    password = "securepassword123"
+    password = "SecureP@ssw0rd123"
     
+    import random
+    phone_num = random.randint(1000000000, 9999999999)
     register_data = {
         "first_name": "Test",
         "last_name": "User",
         "email": email,
-        "phone": f"+1000{unique_id}",
+        "phone": phone_num,
         "password": password,
         "role": "EMPLOYEE"
     }

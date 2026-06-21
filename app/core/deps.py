@@ -40,10 +40,18 @@ def get_current_user(
 
     user_id = verify_token(raw_token)
     if user_id is None:
+        print("get_current_user: user_id is None (verify_token failed)")
         raise credentials_exception
 
-    user = db.query(User).filter(User.id == user_id, User.is_deleted == False).first()
+    try:
+        user_id_int = int(user_id)
+    except ValueError:
+        print(f"get_current_user: failed to cast user_id '{user_id}' to int")
+        raise credentials_exception
+
+    user = db.query(User).filter(User.id == user_id_int, User.is_deleted == False).first()
     if user is None:
+        print(f"get_current_user: user not found in DB for id {user_id_int}")
         raise credentials_exception
 
     if user.status != "ACTIVE":
@@ -111,7 +119,12 @@ def get_optional_current_user(
     if user_id is None:
         return None
     
-    user = db.query(User).filter(User.id == user_id, User.is_deleted == False).first()
+    try:
+        user_id_int = int(user_id)
+    except ValueError:
+        return None
+    
+    user = db.query(User).filter(User.id == user_id_int, User.is_deleted == False).first()
     if user is None or user.status != "ACTIVE":
         return None
     

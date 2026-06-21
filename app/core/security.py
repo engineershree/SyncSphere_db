@@ -22,7 +22,7 @@ def create_access_token(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
     
-    to_encode = {"exp": expire, "sub": str(subject)}
+    to_encode = {"exp": int(expire.timestamp()), "sub": str(subject)}
     encoded_jwt = jwt.encode(
         to_encode, 
         settings.SECRET_KEY, 
@@ -45,7 +45,7 @@ def create_refresh_token(
             days=settings.REFRESH_TOKEN_EXPIRE_DAYS
         )
     
-    to_encode = {"exp": expire, "sub": str(subject), "type": "refresh"}
+    to_encode = {"exp": int(expire.timestamp()), "sub": str(subject), "type": "refresh"}
     encoded_jwt = jwt.encode(
         to_encode, 
         settings.SECRET_KEY, 
@@ -68,7 +68,9 @@ def verify_token(token: str) -> Optional[str]:
         if user_id is None:
             return None
         return user_id
-    except JWTError:
+    except JWTError as e:
+        import logging
+        logging.error(f"JWT decode error: {e}")
         return None
 
 
@@ -107,7 +109,7 @@ def create_password_reset_token(email: str) -> str:
     expires = now + delta
     exp = expires.timestamp()
     encoded_jwt = jwt.encode(
-        {"exp": exp, "nbf": now, "sub": email},
+        {"exp": int(exp), "nbf": int(now.timestamp()), "sub": email},
         settings.SECRET_KEY,
         algorithm=settings.ALGORITHM,
     )

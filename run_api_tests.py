@@ -160,7 +160,8 @@ def main():
 
     # 10. Delete User (Admin Only)
     print("\n--- 10. Delete User (Admin Only) ---")
-    make_request("DELETE", f"/users/{emp_id}", token=admin_token)
+    print(f"Skipping deletion of user {emp_id} so it remains visible in the database.")
+    # make_request("DELETE", f"/users/{emp_id}", token=admin_token)
 
 if __name__ == "__main__":
     main()

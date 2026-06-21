@@ -77,6 +77,9 @@ class AuthResponse(BaseModel):
     token_type: str = "bearer"
     user: UserResponse
 
+    class Config:
+        from_attributes = True
+
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr

@@ -160,11 +160,12 @@ async def add_process_time_header(request: Request, call_next):
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global exception: {exc}", exc_info=True)
+    import traceback
     return JSONResponse(
         status_code=500,
         content={
             "error": "Internal server error",
-            "message": "An unexpected error occurred. Please try again later."
+            "message": f"An unexpected error occurred: {traceback.format_exc()}"
         }
     )
 
